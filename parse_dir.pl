@@ -6,7 +6,7 @@ use File::Find; #core function of Perl
 
 use XML::Writer; #need to add with CPAN
 
-my $writer = XML::Writer->new(OUTPUT => 'self', DATA_MODE => 1, DATA_INDENT => 2, );
+our $writer = XML::Writer->new(OUTPUT => 'self', DATA_MODE => 1, DATA_INDENT => 2); #, UNSAFE => 1 );
 $writer->xmlDecl('UTF-8');
 $writer->startTag('node', TEXT => "Root");
 
@@ -15,21 +15,20 @@ my $start_dir = "/Users/BPC/workspace/slidegen/temp_v2";
 
 #OR die "Usage: $0 DIRs" if not @ARGV;
 
+our $initdepth = -1;
+our $olddepth = -1;
+our $newdepth = -1;
+our $pathchar = "/"; 
+
 #find function performs recursive call through all directories to wanted{} subroutine
 find(\&wanted, $start_dir);
 
-my $dirname = "";
-my $filename = "";
-my $slash = "/";
-my $count = 0;
-my $depth = 0;
-my $pdepth = 0;
-
-#$writer->endTag;
+$writer->endTag();
+$writer->endTag();
+$writer->endTag();
 
 my $xml = $writer->end();
 
-print "xml";
 print $xml;
 
 
@@ -37,34 +36,50 @@ print $xml;
 sub wanted {
 #	print "start\n";
 
+
 #directories are processed here 
 	if (-d) {
-#		print "directory:$_\n";
-
-		$depth = $File::Find::dir =~ tr[/][];
+		#print "close\n";
+		print "$File::Find::dir\t";
+		print "$_\n";
 		
-		#need to pass $pdepth into the subroutine
-		if ($pdepth < $depth) {
-#			print "open\n;";
-			$writer->startTag('node', TEXT => $_);
-		} 
+		#this count's the number of $pathchar in the full path to use as a relative guide for how
+		#the wanted function is traversing and therefore determine the right use of opening and 
+		#closing XML tags
+		#--need initdepth so that whenever the end is hit we can determine how many closing tags are needed
+		$newdepth = () = $File::Find::dir =~ /$pathchar/g;
+				
+		if ($initdepth == -1) { 
+			$initdepth = $newdepth; 
+			#print "initdepth found as $newdepth\n";
+		}
 		
-		if ($pdepth > $depth) {
-#			print "close\n;"
-			$writer->endTag;
-		} 
-		
-		if ($pdepth == $depth) {
-#			print "same\n";
+		if ($newdepth > $olddepth) {
+			$writer->startTag('node', TEXT=> $_);
 		}
 
-		$pdepth = $depth;
+		if ($newdepth == $olddepth) {
+			$writer->endTag();
+			$writer->startTag('node', TEXT=> $_);
+		}
+
+		if ($newdepth < $olddepth) {
+			$writer->endTag();
+			$writer->endTag();
+			$writer->startTag('node', TEXT=> $_);
+		}
+
+		print "i:$initdepth  o:$olddepth  n:$newdepth\n";
+		$olddepth = $newdepth;
+		
 		return;
 	}
 
 #filenames are processed here		
-	$filename = $File::Find::name; 
-	$writer->emptyTag('node', TEXT => $filename);
+		
+	$writer->startTag('node', TEXT=> $_);
+	$writer->endTag();
+	print "file\t$_\n";
 	
 	return;
 }
