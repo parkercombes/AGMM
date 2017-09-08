@@ -1,6 +1,6 @@
 
 # AGMM
-Auto generate a mind map from a directory structure and its files
+Auto Generate a Mind Map from a directory structure and its files
 
 This project has begun out of a desire to understand the XML structure behind Microsoft PowerPoint files i.e. pptx.  The structure of the directory and files is quite complicated, especially as you add more and more features to a slide deck.  
 
